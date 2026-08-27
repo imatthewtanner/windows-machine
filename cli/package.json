@@ -1,0 +1,16 @@
+{
+  "name": "@campaign-studio/cli",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "campaign-studio": "./bin/campaign-studio.mjs"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
+
