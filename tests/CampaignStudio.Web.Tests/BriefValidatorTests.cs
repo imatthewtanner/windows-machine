@@ -1,5 +1,6 @@
 using CampaignStudio.Web.Contracts;
 using CampaignStudio.Web.Services;
+using Xunit;
 
 namespace CampaignStudio.Web.Tests;
 
@@ -50,4 +51,3 @@ public sealed class BriefValidatorTests
         Assert.Contains(result.Issues, issue => issue.Code == "unsupported");
     }
 }
-
