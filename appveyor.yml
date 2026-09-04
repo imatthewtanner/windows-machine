@@ -15,7 +15,7 @@ install:
       $installScript = Join-Path $env:TEMP 'dotnet-install.ps1'
       Invoke-WebRequest -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile $installScript
       & $installScript -Channel 10.0 -InstallDir $env:DOTNET_INSTALL_DIR
-      if ($LASTEXITCODE -ne 0) {
+      if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
         throw "dotnet-install.ps1 failed with exit code $LASTEXITCODE"
       }
       $env:Path = "$env:DOTNET_INSTALL_DIR;$env:Path"
@@ -31,6 +31,37 @@ build_script:
 
 test_script:
   - ps: dotnet test $env:Test_Project_Path --configuration $env:CONFIGURATION --no-restore
+
+after_build:
+  - ps: |
+      if ($env:CONFIGURATION -eq 'Release') {
+        $output = Join-Path $env:APPVEYOR_BUILD_FOLDER 'artifacts\iis'
+        if (Test-Path $output) {
+          Remove-Item $output -Recurse -Force
+        }
+        dotnet publish (Join-Path $env:APPVEYOR_BUILD_FOLDER 'src\CampaignStudio.Web\CampaignStudio.Web.csproj') `
+          --configuration Release --runtime win-x64 --self-contained false `
+          --output $output
+        if ($LASTEXITCODE -ne 0) {
+          throw "dotnet publish failed with exit code $LASTEXITCODE"
+        }
+        $zipPath = Join-Path $env:APPVEYOR_BUILD_FOLDER 'artifacts\CampaignStudio-IIS.zip'
+        if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+        Push-Location $output
+        try {
+          7z a -tzip $zipPath .\*
+        } finally {
+          Pop-Location
+        }
+        if ($LASTEXITCODE -ne 0) {
+          throw "7z packaging failed with exit code $LASTEXITCODE"
+        }
+      }
+
+artifacts:
+  - path: artifacts\CampaignStudio-IIS.zip
+    name: CampaignStudio-IIS
+    type: Zip
 
 # The MSIX packaging project (Wap_Project) requires MSBuild/msbuild.exe and is
 # built only in the GitHub Actions workflow; it is intentionally skipped here.
