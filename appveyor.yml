@@ -1,0 +1,36 @@
+image: Visual Studio 2022
+
+configuration:
+  - Release
+
+environment:
+  Solution_Name: CampaignStudio.sln
+  Test_Project_Path: tests\CampaignStudio.Web.Tests\CampaignStudio.Web.Tests.csproj
+  DOTNET_INSTALL_DIR: C:\dotnet
+
+install:
+  - ps: |
+      $ErrorActionPreference = 'Stop'
+      New-Item -ItemType Directory -Force -Path $env:DOTNET_INSTALL_DIR | Out-Null
+      $installScript = Join-Path $env:TEMP 'dotnet-install.ps1'
+      Invoke-WebRequest -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile $installScript
+      & $installScript -Channel 10.0 -InstallDir $env:DOTNET_INSTALL_DIR
+      if ($LASTEXITCODE -ne 0) {
+        throw "dotnet-install.ps1 failed with exit code $LASTEXITCODE"
+      }
+      $env:Path = "$env:DOTNET_INSTALL_DIR;$env:Path"
+      Update-AppveyorBuild -Message "Installed .NET SDK: $(dotnet --version)"
+
+before_build:
+  - ps: $env:Path = "$env:DOTNET_INSTALL_DIR;$env:Path"
+  - ps: dotnet restore $env:Solution_Name
+
+build_script:
+  # $env:CONFIGURATION is set automatically by AppVeyor from the `configuration` matrix above.
+  - ps: dotnet build $env:Solution_Name --configuration $env:CONFIGURATION --no-restore
+
+test_script:
+  - ps: dotnet test $env:Test_Project_Path --configuration $env:CONFIGURATION --no-restore
+
+# The MSIX packaging project (Wap_Project) requires MSBuild/msbuild.exe and is
+# built only in the GitHub Actions workflow; it is intentionally skipped here.
