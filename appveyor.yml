@@ -15,6 +15,9 @@ install:
       $installScript = Join-Path $env:TEMP 'dotnet-install.ps1'
       Invoke-WebRequest -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile $installScript
       & $installScript -Channel 10.0 -InstallDir $env:DOTNET_INSTALL_DIR
+      if ($LASTEXITCODE -ne 0) {
+        throw "dotnet-install.ps1 failed with exit code $LASTEXITCODE"
+      }
       $env:Path = "$env:DOTNET_INSTALL_DIR;$env:Path"
       Update-AppveyorBuild -Message "Installed .NET SDK: $(dotnet --version)"
 
@@ -23,6 +26,7 @@ before_build:
   - ps: dotnet restore $env:Solution_Name
 
 build_script:
+  # $env:CONFIGURATION is set automatically by AppVeyor from the `configuration` matrix above.
   - ps: dotnet build $env:Solution_Name --configuration $env:CONFIGURATION --no-restore
 
 test_script:
