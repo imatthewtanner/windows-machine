@@ -1,5 +1,6 @@
 using System.Text.Json;
 using CampaignStudio.Web.Services;
+using Xunit;
 
 namespace CampaignStudio.Web.Tests;
 
