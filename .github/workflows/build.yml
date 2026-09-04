@@ -49,7 +49,7 @@ jobs:
       if: github.event_name != 'pull_request' && env.Base64_Encoded_Pfx != ''
       run: |
         $ErrorActionPreference = 'Stop'
-        $pfx_cert_byte = [System.Convert]::FromBase64String("${{ secrets.Base64_Encoded_Pfx }}")
+        $pfx_cert_byte = [System.Convert]::FromBase64String($env:Base64_Encoded_Pfx)
         $certificatePath = Join-Path -Path $env:Wap_Project_Directory -ChildPath GitHubActionsWorkflow.pfx
         [IO.File]::WriteAllBytes("$certificatePath", $pfx_cert_byte)
 
