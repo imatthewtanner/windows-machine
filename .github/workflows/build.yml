@@ -46,7 +46,7 @@ jobs:
         Configuration: ${{ matrix.configuration }}
 
     - name: Decode the pfx
-      if: github.event_name != 'pull_request' && env.Base64_Encoded_Pfx != ''
+      if: github.event_name != 'pull_request' && env.Base64_Encoded_Pfx != '' && hashFiles(env.Wap_Project_Path) != ''
       run: |
         $ErrorActionPreference = 'Stop'
         $pfx_cert_byte = [System.Convert]::FromBase64String($env:Base64_Encoded_Pfx)
