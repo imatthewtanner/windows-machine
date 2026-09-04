@@ -54,7 +54,7 @@ jobs:
         [IO.File]::WriteAllBytes("$certificatePath", $pfx_cert_byte)
 
     - name: Create the app package
-      if: github.event_name != 'pull_request' && env.Base64_Encoded_Pfx != ''
+      if: github.event_name != 'pull_request' && env.Base64_Encoded_Pfx != '' && hashFiles(env.Wap_Project_Path) != ''
       run: |
         $ErrorActionPreference = 'Stop'
         msbuild "$env:Wap_Project_Path" /p:Configuration=$env:Configuration /p:UapAppxPackageBuildMode=$env:Appx_Package_Build_Mode /p:AppxBundle=$env:Appx_Bundle /p:PackageCertificateKeyFile=GitHubActionsWorkflow.pfx /p:AppxBundlePlatforms="$env:Appx_Bundle_Platforms"
@@ -65,7 +65,7 @@ jobs:
         Configuration: ${{ matrix.configuration }}
 
     - name: Remove the pfx
-      if: always() && github.event_name != 'pull_request' && env.Base64_Encoded_Pfx != ''
+      if: always() && github.event_name != 'pull_request' && env.Base64_Encoded_Pfx != '' && hashFiles(env.Wap_Project_Path) != ''
       run: |
         $ErrorActionPreference = 'Stop'
         $certificatePath = Join-Path -Path $env:Wap_Project_Directory -ChildPath GitHubActionsWorkflow.pfx
@@ -74,7 +74,7 @@ jobs:
         }
 
     - name: Upload build artifacts
-      if: github.event_name != 'pull_request' && env.Base64_Encoded_Pfx != ''
+      if: github.event_name != 'pull_request' && env.Base64_Encoded_Pfx != '' && hashFiles(env.Wap_Project_Path) != ''
       uses: actions/upload-artifact@v4
       with:
         name: MSIX Package - ${{ matrix.configuration }}
