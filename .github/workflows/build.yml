@@ -23,6 +23,7 @@ jobs:
       Test_Project_Path: tests/CampaignStudio.Web.Tests/CampaignStudio.Web.Tests.csproj
       Wap_Project_Directory: src/CampaignStudio.Web.Package
       Wap_Project_Path: src/CampaignStudio.Web.Package/CampaignStudio.Web.Package.wapproj
+      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
 
     steps:
     - name: Checkout
@@ -38,13 +39,13 @@ jobs:
     - name: Cache NuGet packages
       uses: actions/cache@v4
       with:
-        path: ~/.nuget/packages
+        path: ${{ github.workspace }}/.nuget/packages
         key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.sln') }}
         restore-keys: |
           ${{ runner.os }}-nuget-
 
     - name: Setup MSBuild.exe
-      if: hashFiles('src/CampaignStudio.Web.Package/CampaignStudio.Web.Package.wapproj') != ''
+      if: hashFiles(env.Wap_Project_Path) != ''
       uses: microsoft/setup-msbuild@v2
 
     - name: Restore solution
@@ -58,7 +59,7 @@ jobs:
         Configuration: ${{ matrix.configuration }}
 
     - name: Decode the pfx
-      if: matrix.configuration == 'Release' && github.event_name != 'pull_request' && hashFiles('src/CampaignStudio.Web.Package/CampaignStudio.Web.Package.wapproj') != ''
+      if: matrix.configuration == 'Release' && github.event_name != 'pull_request' && hashFiles(env.Wap_Project_Path) != ''
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Stop'
@@ -72,7 +73,7 @@ jobs:
         Base64_Encoded_Pfx: ${{ secrets.Base64_Encoded_Pfx }}
 
     - name: Create the app package
-      if: matrix.configuration == 'Release' && github.event_name != 'pull_request' && hashFiles('src/CampaignStudio.Web.Package/CampaignStudio.Web.Package.wapproj') != ''
+      if: matrix.configuration == 'Release' && github.event_name != 'pull_request' && hashFiles(env.Wap_Project_Path) != ''
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Stop'
@@ -84,12 +85,12 @@ jobs:
         Configuration: ${{ matrix.configuration }}
 
     - name: Remove the pfx
-      if: always() && matrix.configuration == 'Release' && github.event_name != 'pull_request'
+      if: always() && matrix.configuration == 'Release' && github.event_name != 'pull_request' && hashFiles(env.Wap_Project_Path) != ''
       shell: pwsh
       run: Remove-Item -Path (Join-Path -Path $env:Wap_Project_Directory -ChildPath GitHubActionsWorkflow.pfx) -ErrorAction SilentlyContinue
 
     - name: Upload build artifacts
-      if: matrix.configuration == 'Release' && github.event_name != 'pull_request' && hashFiles('src/CampaignStudio.Web.Package/CampaignStudio.Web.Package.wapproj') != ''
+      if: matrix.configuration == 'Release' && github.event_name != 'pull_request' && hashFiles(env.Wap_Project_Path) != ''
       uses: actions/upload-artifact@v4
       with:
         name: MSIX Package - ${{ matrix.configuration }}
