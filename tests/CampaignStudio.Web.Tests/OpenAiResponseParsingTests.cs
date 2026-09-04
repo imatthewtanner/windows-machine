@@ -1,5 +1,6 @@
 using System.Text.Json;
 using CampaignStudio.Web.Services;
+using Xunit;
 
 namespace CampaignStudio.Web.Tests;
 
@@ -34,4 +35,3 @@ public sealed class OpenAiResponseParsingTests
         Assert.Null(OpenAiCampaignService.ExtractImageResult(document.RootElement));
     }
 }
-
