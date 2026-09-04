@@ -15,7 +15,7 @@ install:
       $installScript = Join-Path $env:TEMP 'dotnet-install.ps1'
       Invoke-WebRequest -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile $installScript
       & $installScript -Channel 10.0 -InstallDir $env:DOTNET_INSTALL_DIR
-      if ($LASTEXITCODE -ne 0) {
+      if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
         throw "dotnet-install.ps1 failed with exit code $LASTEXITCODE"
       }
       $env:Path = "$env:DOTNET_INSTALL_DIR;$env:Path"
