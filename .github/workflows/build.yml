@@ -15,14 +15,11 @@ jobs:
     runs-on: windows-latest
 
     env:
--      Solution_Name: your-solution-name
--      Test_Project_Path: your-test-project-path
--      Wap_Project_Directory: your-wap-project-directory-name
--      Wap_Project_Path: your-wap-project-path
-+      Solution_Name: windows-machine.sln
-+      Test_Project_Path: tests/windows-machine.Tests/windows-machine.Tests.csproj
-+      Wap_Project_Directory: src/windows-machine.Package
-+      Wap_Project_Path: src/windows-machine.Package/windows-machine.Package.wapproj
+      Solution_Name: CampaignStudio.sln
+      Test_Project_Path: tests/CampaignStudio.Web.Tests/CampaignStudio.Web.Tests.csproj
+      Wap_Project_Directory: src/CampaignStudio.Package
+      Wap_Project_Path: src/CampaignStudio.Package/CampaignStudio.Package.wapproj
+      Base64_Encoded_Pfx: ${{ secrets.Base64_Encoded_Pfx }}
 
     steps:
     - name: Checkout
@@ -33,36 +30,34 @@ jobs:
     - name: Install .NET Core
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 10.0.x
 
     - name: Setup MSBuild.exe
       uses: microsoft/setup-msbuild@v2
 
     - name: Restore solution
--      run: msbuild $env:Solution_Name /t:Restore /p:Configuration=$env:Configuration
-+      run: msbuild "$env:Solution_Name" /t:Restore /p:Configuration=$env:Configuration
+      run: msbuild "$env:Solution_Name" /t:Restore /p:Configuration=$env:Configuration
       env:
         Configuration: ${{ matrix.configuration }}
 
     - name: Execute unit tests
--      run: dotnet test
-+      run: dotnet test "$env:Test_Project_Path" --configuration $env:Configuration --no-restore
+      run: dotnet test "$env:Test_Project_Path" --configuration $env:Configuration --no-restore
       env:
         Configuration: ${{ matrix.configuration }}
 
     - name: Decode the pfx
-+      if: github.event_name != 'pull_request'
+      if: github.event_name != 'pull_request' && env.Base64_Encoded_Pfx != ''
       run: |
-+        $ErrorActionPreference = 'Stop'
-        $pfx_cert_byte = [System.Convert]::FromBase64String("${{ secrets.Base64_Encoded_Pfx }}")
+        $ErrorActionPreference = 'Stop'
+        $pfx_cert_byte = [System.Convert]::FromBase64String($env:Base64_Encoded_Pfx)
         $certificatePath = Join-Path -Path $env:Wap_Project_Directory -ChildPath GitHubActionsWorkflow.pfx
         [IO.File]::WriteAllBytes("$certificatePath", $pfx_cert_byte)
 
     - name: Create the app package
-+      if: github.event_name != 'pull_request'
+      if: github.event_name != 'pull_request' && env.Base64_Encoded_Pfx != ''
       run: |
-+        $ErrorActionPreference = 'Stop'
-        msbuild $env:Wap_Project_Path /p:Configuration=$env:Configuration /p:UapAppxPackageBuildMode=$env:Appx_Package_Build_Mode /p:AppxBundle=$env:Appx_Bundle /p:PackageCertificateKeyFile=GitHubActionsWorkflow.pfx /p:AppxBundlePlatforms=$env:Appx_Bundle_Platforms
+        $ErrorActionPreference = 'Stop'
+        msbuild $env:Wap_Project_Path /p:Configuration=$env:Configuration /p:UapAppxPackageBuildMode=$env:Appx_Package_Build_Mode /p:AppxBundle=$env:Appx_Bundle /p:PackageCertificateKeyFile=GitHubActionsWorkflow.pfx /p:AppxBundlePlatforms="$env:Appx_Bundle_Platforms"
       env:
         Appx_Bundle: Always
         Appx_Bundle_Platforms: x86|x64
@@ -70,13 +65,17 @@ jobs:
         Configuration: ${{ matrix.configuration }}
 
     - name: Remove the pfx
-+      if: always() && github.event_name != 'pull_request'
-      run: Remove-Item -path $env:Wap_Project_Directory\GitHubActionsWorkflow.pfx -ErrorAction SilentlyContinue
+      if: always() && github.event_name != 'pull_request' && env.Base64_Encoded_Pfx != ''
+      run: |
+        $ErrorActionPreference = 'Stop'
+        $certificatePath = Join-Path -Path $env:Wap_Project_Directory -ChildPath GitHubActionsWorkflow.pfx
+        if (Test-Path $certificatePath) {
+          Remove-Item -Path $certificatePath -Force
+        }
 
     - name: Upload build artifacts
-+      if: github.event_name != 'pull_request'
+      if: github.event_name != 'pull_request' && env.Base64_Encoded_Pfx != ''
       uses: actions/upload-artifact@v4
       with:
--        name: MSIX Package
-+        name: MSIX Package - ${{ matrix.configuration }}
+        name: MSIX Package - ${{ matrix.configuration }}
         path: ${{ env.Wap_Project_Directory }}\AppPackages
